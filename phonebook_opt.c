@@ -10,7 +10,7 @@ entry *findName(char lastName[], entry *pHead)
         if (strcasecmp(lastName, pHead->lastName) == 0)
             return pHead;
         pHead = pHead->pNext;
-    }   
+    }
     return NULL;
 }
 
