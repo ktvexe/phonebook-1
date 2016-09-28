@@ -24,7 +24,7 @@ int main(void)
     }
     fclose(fp);
 
-    fp = fopen("opt.txt", "r");
+    fp = fopen("opt_struct.txt", "r");
     if (!fp) {
         fp = fopen("orig.txt", "r");
         if (!fp) {
@@ -32,19 +32,39 @@ int main(void)
             exit(0);
         }
     }
-    double opt_sum_a = 0.0, opt_sum_f = 0.0, opt_a, opt_f;
+    double opt_struct_sum_a = 0.0, opt_struct_sum_f = 0.0, opt_struct_a, opt_struct_f;
     for (i = 0; i < 100; i++) {
         if (feof(fp)) {
             printf("ERROR: You need 100 datum instead of %d\n", i);
             printf("run 'make run' longer to get enough information\n\n");
             exit(0);
         }
-        fscanf(fp, "%s %s %lf %lf\n", append, find, &opt_a, &opt_f);
-        opt_sum_a += opt_a;
-        opt_sum_f += opt_f;
+        fscanf(fp, "%s %s %lf %lf\n", append, find, &opt_struct_a, &opt_struct_f);
+        opt_struct_sum_a += opt_struct_a;
+        opt_struct_sum_f += opt_struct_f;
     }
-    fprintf(output, "append() %lf %lf\n",orig_sum_a / 100.0, opt_sum_a / 100.0);
-    fprintf(output, "findName() %lf %lf", orig_sum_f / 100.0, opt_sum_f / 100.0);
+
+    fp = fopen("opt_hash.txt", "r");
+    if (!fp) {
+        fp = fopen("orig.txt", "r");
+        if (!fp) {
+            printf("ERROR opening input file opt.txt\n");
+            exit(0);
+        }
+    }
+    double opt_hash_sum_a = 0.0, opt_hash_sum_f = 0.0, opt_hash_a, opt_hash_f;
+    for (i = 0; i < 100; i++) {
+        if (feof(fp)) {
+            printf("ERROR: You need 100 datum instead of %d\n", i);
+            printf("run 'make run' longer to get enough information\n\n");
+            exit(0);
+        }
+        fscanf(fp, "%s %s %lf %lf\n", append, find, &opt_hash_a, &opt_hash_f);
+        opt_hash_sum_a += opt_hash_a;
+        opt_hash_sum_f += opt_hash_f;
+    }
+    fprintf(output, "append() %lf %lf %lf\n",orig_sum_a / 100.0, opt_struct_sum_a / 100.0,opt_hash_sum_a / 100.0);
+    fprintf(output, "findName() %lf %lf %lf", orig_sum_f / 100.0, opt_struct_sum_f / 100.0,opt_hash_sum_f / 100.0);
     fclose(output);
     fclose(fp);
     return 0;

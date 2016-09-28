@@ -25,6 +25,9 @@ int main(int argc, char *argv[])
 {
     FILE *fp;
     int i = 0;
+#if defined(OPT)||defined(OPT_HASH)
+    unsigned char index_out=0;
+#endif
     char line[MAX_LAST_NAME_SIZE];
     struct timespec start, end;
     double cpu_time1, cpu_time2;
@@ -37,12 +40,22 @@ int main(int argc, char *argv[])
     }
 
     /* build the entry */
+#if defined(OPT_HASH)
+    entry pHead[SIZE], *e[SIZE];
+    printf("size of entry : %lu bytes\n", sizeof(entry));
+    for (i = 0; i < SIZE; ++i) {
+        e[i] = &pHead[i];
+        e[i]->pNext = NULL;
+        e[i]->index =0;
+    }
+    i = 0;
+#else
     entry *pHead, *e;
     pHead = (entry *) malloc(sizeof(entry));
     printf("size of entry : %lu bytes\n", sizeof(entry));
     e = pHead;
     e->pNext = NULL;
-
+#endif
 #if defined(__GNUC__)
     __builtin___clear_cache((char *) pHead, (char *) pHead + sizeof(entry));
 #endif
@@ -52,36 +65,65 @@ int main(int argc, char *argv[])
             i++;
         line[i - 1] = '\0';
         i = 0;
+#if defined(OPT_HASH)
+        unsigned int hash_index = BKDRHash(line) % SIZE;
+        e[hash_index] = append(line, e[hash_index]);
+#else
         e = append(line, e);
+#endif
     }
+
     clock_gettime(CLOCK_REALTIME, &end);
     cpu_time1 = diff_in_second(start, end);
 
     /* close file as soon as possible */
     fclose(fp);
-
+#if defined(OPT_HASH)
+    for (i = 0; i < SIZE; ++i) {
+        e[i] = &pHead[i];
+    }
+#else
     e = pHead;
-
+#endif
     /* the givn last name to find */
     char input[MAX_LAST_NAME_SIZE] = "zyxel";
+#if defined(OPT_HASH)
+    unsigned int hash_index = BKDRHash(input) % SIZE;
+    e[hash_index] = &pHead[hash_index];
+    assert(findName(input, e[hash_index],(&index_out)) &&
+           "Did you implement findName() in " IMPL "?");
+    assert(0 == strcmp(findName(input, e[hash_index],(&index_out))->lastName[index_out-1], "zyxel"));
+#elif defined(OPT)
     e = pHead;
-
+    assert(findName(input, e,(&index_out)) &&
+           "Did you implement findName() in " IMPL "?");
+    assert(0 == strcmp(findName(input, e,&index_out)->lastName[index_out-1], "zyxel"));
+#else
     assert(findName(input, e) &&
            "Did you implement findName() in " IMPL "?");
     assert(0 == strcmp(findName(input, e)->lastName, "zyxel"));
-
+#endif
 #if defined(__GNUC__)
     __builtin___clear_cache((char *) pHead, (char *) pHead + sizeof(entry));
 #endif
     /* compute the execution time */
     clock_gettime(CLOCK_REALTIME, &start);
+#if defined(OPT_HASH)
+    index_out =0;
+    findName(input,e[hash_index],&index_out);
+#elif defined(OPT)
+    findName(input, e,&index_out);
+#else
     findName(input, e);
+#endif
     clock_gettime(CLOCK_REALTIME, &end);
     cpu_time2 = diff_in_second(start, end);
 
     FILE *output;
 #if defined(OPT)
-    output = fopen("opt.txt", "a");
+    output = fopen("opt_struct.txt", "a");
+#elif defined(OPT_HASH)
+    output = fopen("opt_hash.txt", "a");
 #else
     output = fopen("orig.txt", "a");
 #endif
@@ -91,8 +133,12 @@ int main(int argc, char *argv[])
     printf("execution time of append() : %lf sec\n", cpu_time1);
     printf("execution time of findName() : %lf sec\n", cpu_time2);
 
-    if (pHead->pNext) free(pHead->pNext);
-    free(pHead);
-
+#if defined(OPT)
+    freeList(pHead);
+#elif defined(OPT_HASH)
+    for (i = 0; i < SIZE; i++) {
+        freeList(e[i]->pNext);
+    }
+#endif
     return 0;
 }
